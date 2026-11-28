@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>독서 책장 및 독서 달력 위젯</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR", sans-serif;
+    }
+
+    body {
+      background-color: #ffffff;
+      color: #222222;
+      padding: 16px;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .wrap {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #eeeeee;
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    select, button {
+      border: 1px solid #dddddd;
+      background: #ffffff;
+      color: #222222;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+    }
+
+    .stat-card {
+      border: 1px solid #eeeeee;
+      border-radius: 6px;
+      padding: 10px 12px;
+      background: #fafafa;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: #777777;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: #222222;
+    }
+
+    .genre-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 2px;
+    }
+
+    .genre-pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background: #ffffff;
+      border: 1px solid #e2e2e2;
+      color: #333333;
+    }
+
+    .shelf-section, .calendar-section {
+      border: 1px solid #eeeeee;
+      border-radius: 6px;
+      padding: 12px;
+      background: #ffffff;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 600;
+      color: #222222;
+      margin-bottom: 10px;
+    }
+
+    .shelf-area {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      overflow-x: auto;
+      padding-top: 8px;
+    }
+
+    .shelf-row {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .spines {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      padding: 0 8px;
+      min-height: 145px;
+    }
+
+    .spine {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      writing-mode: vertical-rl;
+      text-orientation: upright;
+      padding: 6px 2px;
+      border-radius: 3px 3px 0 0;
+      color: #ffffff;
+      font-size: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .spine:hover {
+      transform: translateY(-6px);
+    }
+
+    .spine span {
+      max-height: 125px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .plank {
+      height: 7px;
+      background: #dfd5c7;
+      border-radius: 2px;
+      margin-top: 1px;
+    }
+
+    .detail-box {
+      margin-top: 10px;
+      min-height: 20px;
+      font-size: 12px;
+      color: #555555;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 2px;
+    }
+
+    .cal-dow {
+      text-align: center;
+      font-size: 11px;
+      color: #777777;
+      padding: 4px 0;
+    }
+
+    .cal-day {
+      min-height: 68px;
+      border: 1px solid #f2f2f2;
+      border-radius: 4px;
+      padding: 4px;
+      background: #ffffff;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      position: relative;
+    }
+
+    .cal-day.empty {
+      background: #fcfcfc;
+      border-color: transparent;
+    }
+
+    .cal-date-num {
+      font-size: 11px;
+      color: #555555;
+      font-weight: 500;
+      margin-bottom: 1px;
+    }
+
+    .cal-span-bar {
+      font-size: 10px;
+      font-weight: 500;
+      color: #222222;
+      padding: 2px 5px;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      cursor: pointer;
+      border-radius: 0;
+    }
+
+    .cal-span-bar.is-start {
+      border-top-left-radius: 4px;
+      border-bottom-left-radius: 4px;
+      margin-left: -2px;
+    }
+
+    .cal-span-bar.is-end {
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      margin-right: -2px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="toolbar">
+      <div class="controls">
+        <label for="yearFilter">연도</label>
+        <select id="yearFilter"></select>
+
+        <label for="monthFilter">달력 월</label>
+        <select id="monthFilter"></select>
+      </div>
+      <button id="reloadBtn" type="button">데이터 새로고침</button>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-label">올해 총 읽은 권수</span>
+        <span class="stat-value" id="thisYearCount">0권</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-label">선택 연도 완독·총 페이지</span>
+        <span class="stat-value" id="selectedYearSummary">0권 · 0쪽</span>
+      </div>
+      <div class="stat-card" style="grid-column: span 2;">
+        <span class="stat-label">장르별 읽은 권수</span>
+        <div class="genre-list" id="genreBreakdown"></div>
+      </div>
+    </div>
+
+    <div class="shelf-section">
+      <div class="section-title">책장 (파일 및 미디어 배경색 추출)</div>
+      <div class="shelf-area" id="shelfArea"></div>
+      <div class="detail-box" id="detailBox">책을 클릭하면 상세 정보가 표시됩니다.</div>
+    </div>
+
+    <div class="calendar-section">
+      <div class="calendar-header">
+        <div class="section-title" id="calendarTitle" style="margin-bottom:0;">책 읽은 기간 달력</div>
+        <div class="detail-box" id="calendarLegend" style="margin-top:0; font-size:11px;">표지 추출색 형광펜 띠로 기간이 이어져 표시됩니다.</div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </div>
+
+  <script>
+    const CURRENT_YEAR = String(new Date().getFullYear());
+
+    let booksData = [
+      {
+        title: "토지 1",
+        author: "박경리",
+        pages: 340,
+        status: "완독",
+        dateStart: "2026-03-02",
+        dateEnd: "2026-03-15",
+        genre: "소설",
+        imageUrl: "",
+        fallbackColor: "#5c6f82"
+      },
+      {
+        title: "사피엔스",
+        author: "유발 하라리",
+        pages: 460,
+        status: "완독",
+        dateStart: "2026-05-05",
+        dateEnd: "2026-05-20",
+        genre: "인문",
+        imageUrl: "",
+        fallbackColor: "#7b6855"
+      },
+      {
+        title: "작은 아씨들",
+        author: "루이자 메이 올콧",
+        pages: 310,
+        status: "완독",
+        dateStart: "2026-11-04",
+        dateEnd: "2026-11-14",
+        genre: "소설",
+        imageUrl: "",
+        fallbackColor: "#6d7d67"
+      }
+    ];
+
+    const colorCache = new Map();
+
+    function extractFileUrl(raw) {
+      if (!raw) return "";
+      if (typeof raw === "string") return raw;
+      if (Array.isArray(raw) && raw.length > 0) {
+        const first = raw[0];
+        if (typeof first === "string") return first;
+        if (first?.file?.url) return first.file.url;
+        if (first?.external?.url) return first.external.url;
+        if (first?.url) return first.url;
+      }
+      if (raw?.files && Array.isArray(raw.files) && raw.files.length > 0) {
+        return extractFileUrl(raw.files);
+      }
+      if (raw?.type === "files" && Array.isArray(raw.files) && raw.files.length > 0) {
+        return extractFileUrl(raw.files);
+      }
+      if (raw?.type === "url") return raw.url || "";
+      return "";
+    }
+
+    function extractDateRange(rawDate) {
+      if (!rawDate) return { start: "", end: "" };
+      if (typeof rawDate === "string") {
+        const clean = rawDate.slice(0, 10);
+        return { start: clean, end: clean };
+      }
+      if (rawDate?.type === "date" && rawDate.date) {
+        const s = (rawDate.date.start || "").slice(0, 10);
+        const e = (rawDate.date.end || rawDate.date.start || "").slice(0, 10);
+        return { start: s, end: e };
+      }
+      if (rawDate.start || rawDate.end) {
+        const s = (rawDate.start || rawDate.end || "").slice(0, 10);
+        const e = (rawDate.end || rawDate.start || "").slice(0, 10);
+        return { start: s, end: e };
+      }
+      return { start: "", end: "" };
+    }
+
+    function getFallbackFromTitle(title, fallbackColor) {
+      if (fallbackColor && fallbackColor !== "#555555") return fallbackColor;
+      const palette = ["#5c6f82", "#7b6855", "#6d7d67", "#856674", "#5e7678", "#7c6f5b"];
+      let hash = 0;
+      for (let i = 0; i < (title || "").length; i++) {
+        hash = (hash * 31 + title.charCodeAt(i)) >>> 0;
+      }
+      return palette[hash % palette.length];
+    }
+
+    function extractBackgroundColor(imgUrl, fallbackColor) {
+      const cacheKey = `${imgUrl || ""}::${fallbackColor || ""}`;
+      if (colorCache.has(cacheKey)) {
+        return Promise.resolve(colorCache.get(cacheKey));
+      }
+
+      return new Promise(resolve => {
+        if (!imgUrl) {
+          colorCache.set(cacheKey, fallbackColor);
+          resolve(fallbackColor);
+          return;
+        }
+
+        const img = new Image();
+        img.crossOrigin = "anonymous";
+
+        img.onload = () => {
+          try {
+            const size = 24;
+            const canvas = document.createElement("canvas");
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, size, size);
+
+            const coords = [];
+            for (let i = 0; i < size; i++) {
+              coords.push([i, 0], [i, size - 1], [0, i], [size - 1, i]);
+            }
+
+            let rSum = 0;
+            let gSum = 0;
+            let bSum = 0;
+            let count = 0;
+
+            for (const [x, y] of coords) {
+              const px = ctx.getImageData(x, y, 1, 1).data;
+              if (px[3] < 20) continue;
+              rSum += px[0];
+              gSum += px[1];
+              bSum += px[2];
+              count += 1;
+            }
+
+            if (count === 0) {
+              colorCache.set(cacheKey, fallbackColor);
+              resolve(fallbackColor);
+              return;
+            }
+
+            const rgb = `rgb(${Math.round(rSum / count)}, ${Math.round(gSum / count)}, ${Math.round(bSum / count)})`;
+            colorCache.set(cacheKey, rgb);
+            resolve(rgb);
+          } catch (err) {
+            colorCache.set(cacheKey, fallbackColor);
+            resolve(fallbackColor);
+          }
+        };
+
+        img.onerror = () => {
+          colorCache.set(cacheKey, fallbackColor);
+          resolve(fallbackColor);
+        };
+
+        img.src = imgUrl;
+      });
+    }
+
+    function toHighlighterRgba(colorStr, alpha = 0.28) {
+      const match = (colorStr || "").match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+      if (!match) {
+        return `rgba(92, 111, 130, ${alpha})`;
+      }
+      return `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${alpha})`;
+    }
+
+    function getSpineWidth(pages) {
+      const w = Math.round((Number(pages) || 240) / 16);
+      return Math.max(20, Math.min(44, w));
+    }
+
+    function getSpineHeight(title) {
+      let sum = 0;
+      for (let i = 0; i < (title || "").length; i++) {
+        sum += title.charCodeAt(i);
+      }
+      return 115 + (sum % 22);
+    }
+
+    function parseDateOnly(dateStr) {
+      if (!dateStr || typeof dateStr !== "string") return null;
+      const match = dateStr.slice(0, 10).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if (!match) return null;
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+
+    function formatDateLabel(book) {
+      if (!book.dateStart && !book.dateEnd) return "-";
+      if (!book.dateEnd || book.dateStart === book.dateEnd) return book.dateStart || book.dateEnd;
+      return `${book.dateStart} ~ ${book.dateEnd}`;
+    }
+
+    function renderStats(selectedYearBooks) {
+      const thisYearBooks = booksData.filter(b => {
+        const isCompleted = !b.status || b.status === "완독";
+        const refDate = b.dateEnd || b.dateStart || "";
+        return isCompleted && refDate.startsWith(CURRENT_YEAR);
+      });
+
+      const pagesSum = selectedYearBooks.reduce((acc, b) => acc + (Number(b.pages) || 0), 0);
+
+      document.getElementById("thisYearCount").textContent = `${thisYearBooks.length}권`;
+      document.getElementById("selectedYearSummary").textContent =
+        `${selectedYearBooks.length}권 · ${pagesSum.toLocaleString()}쪽`;
+
+      const genreCounts = {};
+      selectedYearBooks.forEach(b => {
+        const g = (b.genre || "기타").trim() || "기타";
+        genreCounts[g] = (genreCounts[g] || 0) + 1;
+      });
+
+      const genreEl = document.getElementById("genreBreakdown");
+      genreEl.innerHTML = "";
+      const entries = Object.entries(genreCounts).sort((a, b) => b[1] - a[1]);
+
+      if (entries.length === 0) {
+        genreEl.innerHTML = `<span class="stat-label">기록 없음</span>`;
+        return;
+      }
+
+      entries.forEach(([genre, cnt]) => {
+        const pill = document.createElement("span");
+        pill.className = "genre-pill";
+        pill.textContent = `${genre} ${cnt}권`;
+        genreEl.appendChild(pill);
+      });
+    }
+
+    function renderCalendar(year, monthIndex) {
+      const grid = document.getElementById("calendarGrid");
+      const titleEl = document.getElementById("calendarTitle");
+      const yNum = Number(year);
+      const mNum = Number(monthIndex);
+
+      titleEl.textContent = `${yNum}년 ${mNum + 1}월 독서 기간 달력`;
+      grid.innerHTML = "";
+
+      const dows = ["일", "월", "화", "수", "목", "금", "토"];
+      dows.forEach(d => {
+        const head = document.createElement("div");
+        head.className = "cal-dow";
+        head.textContent = d;
+        grid.appendChild(head);
+      });
+
+      const firstDay = new Date(yNum, mNum, 1);
+      const lastDay = new Date(yNum, mNum + 1, 0);
+      const monthStart = new Date(yNum, mNum, 1);
+      const monthEnd = new Date(yNum, mNum, lastDay.getDate());
+      const startWeekday = firstDay.getDay();
+      const totalDays = lastDay.getDate();
+
+      const activeSpans = booksData
+        .map(book => {
+          const s = parseDateOnly(book.dateStart || book.dateEnd);
+          const e = parseDateOnly(book.dateEnd || book.dateStart);
+          if (!s && !e) return null;
+
+          const rawStart = s || e;
+          const rawEnd = e || s;
+          const actualStart = rawStart <= rawEnd ? rawStart : rawEnd;
+          const actualEnd = rawStart <= rawEnd ? rawEnd : rawStart;
+
+          if (actualEnd < monthStart || actualStart > monthEnd) return null;
+
+          const clippedStart = actualStart < monthStart ? monthStart : actualStart;
+          const clippedEnd = actualEnd > monthEnd ? monthEnd : actualEnd;
+
+          return {
+            book,
+            startDay: clippedStart.getDate(),
+            endDay: clippedEnd.getDate(),
+            isRealStart: actualStart.getTime() === clippedStart.getTime(),
+            isRealEnd: actualEnd.getTime() === clippedEnd.getTime(),
+            baseColor: book.bgColor || book.fallbackColor || "#5c6f82"
+          };
+        })
+        .filter(Boolean);
+
+      for (let i = 0; i < startWeekday; i++) {
+        const emptyCell = document.createElement("div");
+        emptyCell.className = "cal-day empty";
+        grid.appendChild(emptyCell);
+      }
+
+      for (let day = 1; day <= totalDays; day++) {
+        const cell = document.createElement("div");
+        cell.className = "cal-day";
+
+        const numEl = document.createElement("div");
+        numEl.className = "cal-date-num";
+        numEl.textContent = String(day);
+        cell.appendChild(numEl);
+
+        const daySpans = activeSpans.filter(sp => day >= sp.startDay && day <= sp.endDay);
+        daySpans.slice(0, 3).forEach(sp => {
+          const bar = document.createElement("div");
+          bar.className = "cal-span-bar";
+          if (day === sp.startDay && sp.isRealStart) bar.classList.add("is-start");
+          if (day === sp.endDay && sp.isRealEnd) bar.classList.add("is-end");
+
+          bar.textContent = day === sp.startDay || (startWeekday + day - 1) % 7 === 0 ? sp.book.title : "\u00A0";
+          bar.style.backgroundColor = toHighlighterRgba(sp.baseColor, 0.28);
+          bar.style.borderBottom = `2px solid ${toHighlighterRgba(sp.baseColor, 0.8)}`;
+          bar.title = `${sp.book.title} (${formatDateLabel(sp.book)})`;
+
+          bar.addEventListener("click", () => {
+            document.getElementById("detailBox").textContent =
+              `${sp.book.title} | 장르: ${sp.book.genre || "-"} | Date: ${formatDateLabel(sp.book)} | ${sp.book.pages || 0}쪽`;
+          });
+
+          cell.appendChild(bar);
+        });
+
+        grid.appendChild(cell);
+      }
+    }
+
+    async function renderAll() {
+      const year = document.getElementById("yearFilter").value || CURRENT_YEAR;
+      const monthIndex = Number(document.getElementById("monthFilter").value || new Date().getMonth());
+
+      const filteredBooks = booksData.filter(b => {
+        const isCompleted = !b.status || b.status === "완독";
+        const refDate = b.dateEnd || b.dateStart || "";
+        if (!isCompleted) return false;
+        if (year === "ALL") return true;
+        return refDate.startsWith(year);
+      });
+
+      const coloredBooks = await Promise.all(
+        filteredBooks.map(async book => {
+          const fallback = getFallbackFromTitle(book.title, book.fallbackColor);
+          const bgColor = await extractBackgroundColor(book.imageUrl, fallback);
+          return { ...book, bgColor };
+        })
+      );
+
+      const coloredMap = new Map(coloredBooks.map(b => [b.title + (b.dateEnd || b.dateStart || ""), b.bgColor]));
+      booksData = booksData.map(b => {
+        const mappedColor = coloredMap.get(b.title + (b.dateEnd || b.dateStart || ""));
+        return mappedColor ? { ...b, bgColor: mappedColor } : {
+          ...b,
+          bgColor: b.bgColor || getFallbackFromTitle(b.title, b.fallbackColor)
+        };
+      });
+
+      renderStats(coloredBooks);
+
+      const shelfArea = document.getElementById("shelfArea");
+      shelfArea.innerHTML = "";
+
+      if (coloredBooks.length === 0) {
+        shelfArea.innerHTML = `<div style="color:#777777; padding:12px 0;">표시할 완독 도서가 없습니다.</div>`;
+      } else {
+        const perRow = 16;
+        for (let i = 0; i < coloredBooks.length; i += perRow) {
+          const chunk = coloredBooks.slice(i, i + perRow);
+          const row = document.createElement("div");
+          row.className = "shelf-row";
+
+          const spines = document.createElement("div");
+          spines.className = "spines";
+
+          let rowWidth = 16;
+
+          chunk.forEach(book => {
+            const w = getSpineWidth(book.pages);
+            const h = getSpineHeight(book.title);
+            rowWidth += w + 2;
+
+            const spineEl = document.createElement("div");
+            spineEl.className = "spine";
+            spineEl.style.width = `${w}px`;
+            spineEl.style.height = `${h}px`;
+            spineEl.style.backgroundColor = book.bgColor;
+
+            const label = document.createElement("span");
+            label.textContent = book.title;
+            spineEl.appendChild(label);
+
+            spineEl.addEventListener("click", () => {
+              document.getElementById("detailBox").textContent =
+                `${book.title} | 저자: ${book.author || "-"} | 장르: ${book.genre || "-"} | ${book.pages || 0}쪽 | Date: ${formatDateLabel(book)}`;
+            });
+
+            spines.appendChild(spineEl);
+          });
+
+          const plank = document.createElement("div");
+          plank.className = "plank";
+          plank.style.width = `${Math.max(120, rowWidth)}px`;
+
+          row.appendChild(spines);
+          row.appendChild(plank);
+          shelfArea.appendChild(row);
+        }
+      }
+
+      renderCalendar(year === "ALL" ? CURRENT_YEAR : year, monthIndex);
+    }
+
+    function populateSelectors() {
+      const yearSelect = document.getElementById("yearFilter");
+      const years = [...new Set([
+        CURRENT_YEAR,
+        ...booksData
+          .map(b => (b.dateEnd || b.dateStart || "").slice(0, 4))
+          .filter(y => /^\d{4}$/.test(y))
+      ])].sort((a, b) => b.localeCompare(a));
+
+      const prevYear = yearSelect.value;
+      yearSelect.innerHTML = `<option value="ALL">전체 연도</option>`;
+      years.forEach(y => {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = `${y}년`;
+        yearSelect.appendChild(opt);
+      });
+      yearSelect.value = prevYear && [...yearSelect.options].some(o => o.value === prevYear)
+        ? prevYear
+        : CURRENT_YEAR;
+
+      const monthSelect = document.getElementById("monthFilter");
+      if (monthSelect.options.length === 0) {
+        for (let m = 0; m < 12; m++) {
+          const opt = document.createElement("option");
+          opt.value = String(m);
+          opt.textContent = `${m + 1}월`;
+          monthSelect.appendChild(opt);
+        }
+        monthSelect.value = String(new Date().getMonth());
+      }
+    }
+
+    async function loadData() {
+      try {
+        const res = await fetch("/api/reading-data");
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data.books) && data.books.length > 0) {
+            booksData = data.books.map(b => {
+              const rawFilesProp =
+                b["파일 및 미디어"] || b.Files || b.files || b.SpineImage || b.Cover || b.imageUrl || "";
+              const rawDateProp =
+                b.Date || b.date || b["날짜"] || b.FinishedDate || b.finishedDate || b.StartDate || b.startDate || "";
+              const range = extractDateRange(rawDateProp);
+
+              return {
+                title: b.Title || b.title || "",
+                author: b.Author || b.author || "",
+                pages: b.TotalPages || b.pages || 0,
+                status: b.Status || b.status || "완독",
+                dateStart: range.start,
+                dateEnd: range.end,
+                genre: b.Genre || b.genre || "기타",
+                imageUrl: extractFileUrl(rawFilesProp),
+                fallbackColor: b.SpineColor || "#5c6f82"
+              };
+            });
+          }
+        }
+      } catch (e) {
+        // 기본 데이터 유지
+      }
+
+      populateSelectors();
+      await renderAll();
+    }
+
+    document.getElementById("yearFilter").addEventListener("change", () => {
+      const yVal = document.getElementById("yearFilter").value;
+      if (yVal !== "ALL") {
+        renderCalendar(yVal, Number(document.getElementById("monthFilter").value));
+      }
+      renderAll();
+    });
+    document.getElementById("monthFilter").addEventListener("change", renderAll);
+    document.getElementById("reloadBtn").addEventListener("click", loadData);
+
+    loadData();
+  </script>
+</body>
+</html>
