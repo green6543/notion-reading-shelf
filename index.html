@@ -72,6 +72,10 @@
   .days { grid-template-rows: 20px repeat(var(--lanes), 15px) minmax(44px, auto); row-gap: 1px; padding-bottom: 4px; border-bottom: 1px solid var(--line); }
   .num { grid-row: 1; justify-self: start; margin: 3px 0 0 3px; width: 14px; height: 14px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; color: #666; }
   .num.today { background: var(--ink); color: #fff; }
+  .cal-nav { display: flex; justify-content: center; align-items: center; gap: 4px; margin-bottom: 8px; }
+  .cal-nav .cal-title { margin: 0; min-width: 112px; text-align: center; }
+  .cal-nav button { width: 28px; height: 28px; font-size: 15px; line-height: 1; color: var(--sub); }
+  .cal-nav button:hover { background: var(--soft); color: var(--ink); }
   /* 형광펜: 일자 끝 */
   .bar { align-self: center; min-width: 0; height: 12px; line-height: 12px; padding: 0 5px; border-radius: 0; text-align: left; font-size: 9px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background-image: linear-gradient(to bottom, transparent 62%, rgba(255,255,255,.18) 62%, transparent 82%); }
   .bar.start { margin-left: 4px; box-shadow: inset 3px 0 0 rgba(0,0,0,.035); }
@@ -148,7 +152,11 @@
   </section>
 
   <section class="box cal-box">
-    <div class="cal-title" id="calendarTitle">reading calendar</div>
+    <div class="cal-nav">
+      <button type="button" id="prevMonth" aria-label="이전 달">‹</button>
+      <div class="cal-title" id="calendarTitle" aria-live="polite">reading calendar</div>
+      <button type="button" id="nextMonth" aria-label="다음 달">›</button>
+    </div>
     <div class="calendar" id="calendar"></div>
   </section>
 </div>
@@ -502,7 +510,8 @@
   function fillYears() {
     const current = new Date().getFullYear();
     const years = [...new Set([String(current), String(current + 1),
-      ...books.map(b => doneDate(b).slice(0, 4)).filter(Boolean)])].sort().reverse();
+      ...books.map(b => doneDate(b).slice(0, 4)).filter(Boolean),
+      ...(/^\d{4}$/.test(selectedYear()) ? [selectedYear()] : [])])].sort().reverse();
     const previous = selectedYear() || params.get("year");
     $("year").replaceChildren(new Option("전체 연도", "ALL"), ...years.map(y => new Option(`${y}년`, y)));
     $("year").value = previous === "ALL" || years.includes(previous) ? previous : String(current);
@@ -554,6 +563,19 @@
   fillYears();
   $("year").onchange = renderAll;
   $("month").onchange = renderCalendar;
+  function moveMonth(step) {
+    const shownYear = Number(goalYear());
+    const next = new Date(shownYear, Number($("month").value) + step, 1);
+    const year = String(next.getFullYear());
+    $("month").value = next.getMonth();
+    if (next.getFullYear() === shownYear) return renderCalendar();
+    // 해가 바뀌면 상단 연도도 함께 변경
+    if (![...$("year").options].some(o => o.value === year)) $("year").add(new Option(`${year}년`, year));
+    $("year").value = year;
+    renderAll();
+  }
+  $("prevMonth").onclick = () => moveMonth(-1);
+  $("nextMonth").onclick = () => moveMonth(1);
   $("goal").onchange = () => {
     const value = Math.min(1000, Math.floor(Number($("goal").value)));
     if (value > 0) {
