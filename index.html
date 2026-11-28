@@ -84,6 +84,10 @@
   .days .bar.start { box-shadow: inset 3px 0 0 rgba(0,0,0,.035); }
   .days .bar.end { box-shadow: inset -3px 0 0 rgba(0,0,0,.035); }
   .days .bar.start.end { box-shadow: inset 3px 0 0 rgba(0,0,0,.035), inset -3px 0 0 rgba(0,0,0,.035); }
+  /* 화면 분리: 기본 = 기록, ?view=calendar = 달력만 */
+  [hidden] { display: none !important; }
+  body:not(.view-calendar) .cal-box, body:not(.view-calendar) .month-control { display: none; }
+  body.view-calendar .summary, body.view-calendar .wrap > section:not(.cal-box) { display: none; }
 </style>
 </head>
 <body>
@@ -91,7 +95,7 @@
   <div class="toolbar">
     <div class="controls">
       <label for="year">연도</label><select id="year"></select>
-      <label for="month">달력 월</label><select id="month"></select>
+      <span class="controls month-control"><label for="month">월</label><select id="month"></select></span>
     </div>
     <div class="controls">
       <span class="muted" id="updated" aria-live="polite"></span>
@@ -485,8 +489,8 @@
     const years = [...new Set([String(current), String(current + 1),
       ...books.map(b => doneDate(b).slice(0, 4)).filter(Boolean)])].sort().reverse();
     const previous = selectedYear() || params.get("year");
-    $("year").replaceChildren(new Option("전체 연도", "ALL"), ...years.map(y => new Option(`${y}년`, y)));
-    $("year").value = previous === "ALL" || years.includes(previous) ? previous : String(current);
+    $("year").replaceChildren(...(calendarOnly ? [] : [new Option("전체 연도", "ALL")]), ...years.map(y => new Option(`${y}년`, y)));
+    $("year").value = (previous === "ALL" && !calendarOnly) || years.includes(previous) ? previous : String(current);
   }
 
   function showMessage(text) {
@@ -530,6 +534,13 @@
     }
   }
 
+  const calendarOnly = params.get("view") === "calendar";
+  if (calendarOnly) {
+    document.body.classList.add("view-calendar");
+    document.title = "독서 달력";
+    // 책을 눌렀을 때의 상세 정보를 달력 아래에 표시
+    document.querySelector(".cal-box").append($("detail"));
+  }
   for (let m = 0; m < 12; m++) $("month").add(new Option(`${m + 1}월`, m));
   $("month").value = new Date().getMonth();
   fillYears();
