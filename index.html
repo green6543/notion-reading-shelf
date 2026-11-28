@@ -21,13 +21,18 @@
   .message { padding: 9px 12px; border-radius: 6px; background: #f4f4f4; border: 1px solid #222; color: #222; }
   .box { border: 1px solid #eee; border-radius: 6px; padding: 12px; }
   .title { font-weight: 600; }
-  .goal-number { font-size: 22px; font-weight: 700; margin: 6px 0; }
-  .track { height: 10px; background: #eeeeee; border-radius: 5px; overflow: hidden; }
+  .goal-number { font-size: 15px; font-weight: 700; margin: 2px 0 5px; white-space: nowrap; }
+  .track { height: 7px; background: #eeeeee; border-radius: 5px; overflow: hidden; }
   .fill { height: 100%; width: 0; background: #222222; transition: width .3s; }
-  .pace { margin-top: 7px; color: #444; }
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
-  .stat { border: 1px solid #eee; background: #fafafa; border-radius: 6px; padding: 9px 12px; }
-  .stat b { display: block; font-size: 15px; }
+  .pace { margin-top: 5px; color: #555; font-size: 10px; word-break: keep-all; }
+  .summary { display: grid; grid-template-columns: minmax(0, 2.4fr) repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .stats { display: contents; }
+  .goal-card, .stat { border: 1px solid #eee; border-radius: 8px; padding: 9px 10px; min-width: 0; }
+  .goal-head { display: flex; justify-content: space-between; align-items: center; gap: 4px; }
+  .goal-head input { width: 48px; padding: 1px 4px; font-size: 11px; margin-right: 2px; }
+  .stat { display: flex; flex-direction: column; justify-content: center; gap: 4px; text-align: center; word-break: keep-all; }
+  .stat b { font-size: 16px; }
+  @media (max-width: 520px) { .summary { grid-template-columns: repeat(4, minmax(0, 1fr)); } .goal-card { grid-column: 1 / -1; } }
   .months { display: grid; grid-template-columns: repeat(12, 1fr); gap: 4px; margin-top: 10px; }
   .month { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; height: 90px; font-size: 10px; color: #777; }
   .month i { width: 70%; background: #8a8a8a; border-radius: 3px 3px 0 0; }
@@ -41,14 +46,25 @@
   .spine span { writing-mode: vertical-rl; text-orientation: mixed; max-height: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; }
   .plank { height: 7px; background: #d6d6d6; border-radius: 2px; margin-top: 1px; }
   .detail { margin-top: 10px; color: #555; white-space: pre-line; }
-  .calendar { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin-top: 10px; }
-  .dow { text-align: center; color: #777; font-size: 11px; }
-  .day { min-height: 68px; border: 1px solid #f2f2f2; border-radius: 4px; padding: 4px 2px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-  .day.empty { border-color: transparent; }
-  .day.today { border-color: #888; }
-  .bar { border: 0; text-align: left; font-size: 10px; padding: 2px 4px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-radius: 0; color: #222; flex: none; }
-  .bar.start { border-top-left-radius: 4px; border-bottom-left-radius: 4px; }
-  .bar.end { border-top-right-radius: 4px; border-bottom-right-radius: 4px; }
+  .cal-box { padding: 18px 10px 10px; border-radius: 12px; }
+  .cal-title { text-align: center; font-family: Georgia, "Times New Roman", "Noto Serif KR", serif; font-size: 20px; letter-spacing: .04em; margin-bottom: 14px; }
+  .calendar { border-top: 1px solid #222; }
+  .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .weekdays { border-bottom: 1px solid #ddd; }
+  .dow { text-align: center; color: #555; font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: clamp(8px, 1.7vw, 12px); padding: 7px 0; overflow: hidden; }
+  .days { grid-template-rows: 26px repeat(3, 19px) minmax(86px, auto); row-gap: 2px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+  .days:last-child { border-bottom: 0; }
+  .num { grid-row: 1; justify-self: start; margin: 5px 0 0 5px; width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: Georgia, serif; font-size: 11px; color: #444; }
+  .num.today { background: #222; color: #fff; }
+  .bar { border: 0; border-radius: 0; height: 17px; align-self: center; min-width: 0; padding: 0 6px; text-align: left; font-size: 10px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #222; }
+  .bar.start { border-top-left-radius: 9px; border-bottom-left-radius: 9px; margin-left: 4px; }
+  .bar.end { border-top-right-radius: 9px; border-bottom-right-radius: 9px; margin-right: 4px; }
+  .covers { grid-row: 5; display: flex; justify-content: center; align-items: flex-end; gap: 3px; padding: 5px 3px 0; min-width: 0; }
+  .cover { flex: 0 1 52px; min-width: 0; aspect-ratio: 2 / 3; padding: 0; border: 0; border-radius: 2px; overflow: hidden; box-shadow: 0 2px 7px rgba(0,0,0,.2); transition: transform .15s; }
+  .cover:hover { transform: translateY(-3px); }
+  .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cover span { display: block; padding: 3px; color: #fff; font-size: 9px; line-height: 1.2; word-break: break-all; }
+  .more { align-self: center; justify-self: end; border: 0; padding: 0 3px; font-size: 10px; color: #555; z-index: 1; }
 </style>
 </head>
 <body>
@@ -65,23 +81,18 @@
   </div>
   <div class="message" id="message" role="alert" hidden></div>
 
-  <section class="box">
-    <div class="row">
-      <span class="title" id="goalTitle">다독 목표</span>
-      <label class="muted">목표 <input id="goal" type="number" min="1" max="1000" step="1"> 권</label>
-    </div>
-    <div class="goal-number" id="goalNumber">-</div>
-    <div class="track"><div class="fill" id="goalFill"></div></div>
-    <div class="pace" id="pace"></div>
-  </section>
-
-  <div class="stats" id="stats"></div>
-
-  <section class="box">
-    <div class="title">월별 완독 권수</div>
-    <div class="months" id="months"></div>
-    <div class="pills" id="genres"></div>
-  </section>
+  <div class="summary">
+    <section class="goal-card">
+      <div class="goal-head">
+        <span class="muted" id="goalTitle">올해 목표</span>
+        <label class="muted"><input id="goal" type="number" min="1" max="1000" step="1" aria-label="목표 권수">권</label>
+      </div>
+      <div class="goal-number" id="goalNumber">-</div>
+      <div class="track"><div class="fill" id="goalFill"></div></div>
+      <div class="pace" id="pace"></div>
+    </section>
+    <div class="stats" id="stats"></div>
+  </div>
 
   <section class="box">
     <div class="row">
@@ -93,7 +104,13 @@
   </section>
 
   <section class="box">
-    <div class="title" id="calendarTitle">독서 달력</div>
+    <div class="title">월별 완독 권수</div>
+    <div class="months" id="months"></div>
+    <div class="pills" id="genres"></div>
+  </section>
+
+  <section class="box cal-box">
+    <div class="cal-title" id="calendarTitle">reading calendar</div>
     <div class="calendar" id="calendar"></div>
   </section>
 </div>
@@ -200,7 +217,7 @@
     const year = goalYear();
     const goal = getGoal(year);
     const count = completedIn(year).length;
-    $("goalTitle").textContent = `${year}년 다독 목표`;
+    $("goalTitle").textContent = year === String(new Date().getFullYear()) ? "올해 목표" : `${year}년 목표`;
     if (document.activeElement !== $("goal")) $("goal").value = goal;
     if (!loaded) return;
 
@@ -236,10 +253,10 @@
     const now = new Date();
     const thisMonth = completedIn("ALL").filter(b => doneDate(b).startsWith(iso(now).slice(0, 7))).length;
     const items = [
-      [year === "ALL" ? "전체 완독" : `${year}년 완독`, `${done.length}권`],
+      [year === "ALL" ? "전체 완독" : "완독", `${done.length}권`],
       ["완독 페이지", `${pages.toLocaleString()}쪽`],
       ["이번 달 완독", `${thisMonth}권`],
-      ["읽는 중 / 읽을 예정", `${books.filter(b => b.status === "읽는 중").length} / ${books.filter(b => b.status === "읽을 예정").length}권`]
+      ["읽는 중", `${books.filter(b => b.status === "읽는 중").length}권`]
     ];
     $("stats").replaceChildren(...items.map(([label, value]) => {
       const card = el("div", "stat");
@@ -321,13 +338,40 @@
     }
   }
 
+  const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+  function place(node, row, from, to = from) {
+    node.style.gridRow = row;
+    node.style.gridColumn = `${from + 1} / ${to + 2}`;
+    return node;
+  }
+
+  function coverCard(book) {
+    const card = el("button", "cover");
+    card.type = "button";
+    card.title = book.title;
+    card.setAttribute("aria-label", `${book.title} 완독`);
+    card.onclick = () => showDetail(book);
+    card.style.background = baseColor(book);
+    const title = () => card.replaceChildren(el("span", "", book.title));
+    if (book.cover) {
+      const img = el("img");
+      img.alt = book.title;
+      img.onerror = title;
+      img.src = book.cover;
+      card.append(img);
+    } else title();
+    return card;
+  }
+
   function renderCalendar() {
     const year = Number(goalYear());
     const month = Number($("month").value);
     const lastDay = new Date(year, month + 1, 0).getDate();
     const offset = new Date(year, month, 1).getDay();
     const today = iso(new Date());
-    $("calendarTitle").textContent = `${year}년 ${month + 1}월 독서 달력`;
+    $("calendarTitle").textContent = `${MONTHS[month]} ${year}`;
 
     const spans = books.filter(b => b.status !== "읽을 예정").map(b => {
       const start = b.dateStart;
@@ -335,43 +379,78 @@
       // 읽는 중이고 종료일이 없으면 오늘까지 표시
       if (b.status === "읽는 중" && !b.dateEnd && start && start < today) end = today;
       return { book: b, start, end };
-    }).filter(s => s.start).sort((a, b) => a.start.localeCompare(b.start));
+    }).filter(s => s.start).sort((a, b) => a.start.localeCompare(b.start) || b.end.localeCompare(a.end));
 
-    const nodes = ["일", "월", "화", "수", "목", "금", "토"].map(d => el("div", "dow", d));
-    for (let i = 0; i < offset; i++) nodes.push(el("div", "day empty"));
-    for (let day = 1; day <= lastDay; day++) {
-      const date = `${year}-${pad(month + 1)}-${pad(day)}`;
-      const cell = el("div", date === today ? "day today" : "day");
-      cell.append(el("div", "muted", String(day)));
-      const active = spans.filter(s => s.start <= date && date <= s.end);
-      active.slice(0, 3).forEach(s => {
-        const showName = date === s.start || day === 1 || (offset + day - 1) % 7 === 0;
-        const bar = el("button", "bar", showName ? s.book.title : "\u00a0");
-        if (date === s.start) bar.classList.add("start");
-        if (date === s.end) bar.classList.add("end");
-        const color = baseColor(s.book);
+    // 같은 책은 주가 바뀌어도 같은 줄에 오도록 줄 번호를 정함
+    const first = `${year}-${pad(month + 1)}-01`;
+    const last = `${year}-${pad(month + 1)}-${pad(lastDay)}`;
+    const laneEnds = [];
+    const visible = spans.filter(s => s.start <= last && s.end >= first);
+    visible.forEach(s => {
+      let lane = laneEnds.findIndex(end => end < s.start);
+      if (lane < 0) lane = laneEnds.length;
+      laneEnds[lane] = s.end;
+      s.lane = lane;
+    });
+
+    const head = el("div", "week weekdays");
+    head.append(...DAYS.map(d => el("div", "dow", d)));
+    const weeks = [head];
+
+    for (let w = 0; w < Math.ceil((offset + lastDay) / 7); w++) {
+      const week = el("div", "week days");
+      const dates = [];
+      for (let col = 0; col < 7; col++) {
+        const day = w * 7 + col - offset + 1;
+        if (day < 1 || day > lastDay) continue;
+        const date = `${year}-${pad(month + 1)}-${pad(day)}`;
+        dates.push({ col, date });
+        week.append(place(el("div", date === today ? "num today" : "num", String(day)), 1, col));
+      }
+      const from = dates[0].date;
+      const to = dates[dates.length - 1].date;
+
+      visible.filter(s => s.lane < 3 && s.start <= to && s.end >= from).forEach(s => {
+        const inside = dates.filter(d => s.start <= d.date && d.date <= s.end);
+        const bar = el("button", "bar", s.book.title);
+        if (s.start >= from) bar.classList.add("start");
+        if (s.end <= to) bar.classList.add("end");
         bar.type = "button";
         bar.title = s.book.title;
-        bar.setAttribute("aria-label", `${date} ${s.book.title}`);
-        bar.style.background = rgba(color, .18);
-        bar.style.borderBottom = `2px solid ${rgba(color, .8)}`;
         bar.onclick = () => showDetail(s.book);
-        cell.append(bar);
-        // 표지 색을 추출하면 형광펜 색도 교체
-        coverColor(s.book).then(c => {
-          bar.style.background = rgba(c, .18);
-          bar.style.borderBottomColor = rgba(c, .8);
-        });
+        bar.style.background = rgba(baseColor(s.book), .3);
+        coverColor(s.book).then(c => bar.style.background = rgba(c, .3));
+        week.append(place(bar, s.lane + 2, inside[0].col, inside[inside.length - 1].col));
       });
-      if (active.length > 3) {
-        const more = el("button", "bar", `+${active.length - 3}`);
-        more.type = "button";
-        more.onclick = () => { $("detail").textContent = `${date}\n${active.map(s => s.book.title).join("\n")}`; };
-        cell.append(more);
-      }
-      nodes.push(cell);
+
+      dates.forEach(({ col, date }) => {
+        const finished = books.filter(b => b.status === "완독" && doneDate(b) === date);
+        if (finished.length) {
+          const box = el("div", "covers");
+          const cards = finished.slice(0, 2).map(book => {
+            const card = coverCard(book);
+            if (!book.cover) coverColor(book).then(c => card.style.background = c);
+            return card;
+          });
+          box.append(...cards);
+          week.append(place(box, 5, col));
+        }
+        const active = visible.filter(s => s.start <= date && date <= s.end);
+        const hidden = active.filter(s => s.lane >= 3).length + Math.max(0, finished.length - 2);
+        if (hidden) {
+          const more = el("button", "more", `+${hidden}`);
+          more.type = "button";
+          more.onclick = () => {
+            const titles = new Set([...active.map(s => s.book.title), ...finished.map(b => b.title)]);
+            $("detail").textContent = `${date}\n${[...titles].join("\n")}`;
+            $("detail").scrollIntoView({ block: "nearest" });
+          };
+          week.append(place(more, 1, col));
+        }
+      });
+      weeks.push(week);
     }
-    $("calendar").replaceChildren(...nodes);
+    $("calendar").replaceChildren(...weeks);
   }
 
   function renderAll() {
