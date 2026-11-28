@@ -11,7 +11,9 @@
   .wrap { max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
   .toolbar, .controls, .row { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .toolbar, .row { justify-content: space-between; }
-  .toolbar { padding-bottom: 10px; border-bottom: 1px solid #eee; }
+  .toolbar { padding-bottom: 10px; border-bottom: 1px solid #eee; font-size: 10px; }
+  .toolbar select, .toolbar button { font-size: 10px; padding: 2px 6px; }
+  .toolbar .muted { font-size: 10px; }
   select, button, input { border: 1px solid #ddd; background: #fff; color: #222; padding: 5px 10px; border-radius: 4px; font-size: 12px; }
   select, button { cursor: pointer; }
   button:disabled { opacity: .5; cursor: wait; }
@@ -47,25 +49,41 @@
   .spine span { writing-mode: vertical-rl; text-orientation: mixed; max-height: 100%; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 10px; }
   .plank { height: 7px; background: #d6d6d6; border-radius: 2px; margin-top: 1px; }
   .detail { margin-top: 10px; color: #555; white-space: pre-line; }
-  .cal-box { padding: 18px 10px 10px; border-radius: 12px; }
-  .cal-title { text-align: center; font-size: 20px; letter-spacing: .04em; margin-bottom: 14px; }
+  .cal-box { padding: 12px 10px 6px; border-radius: 12px; }
+  .cal-title { text-align: center; font-size: 12px; letter-spacing: .04em; margin-bottom: 8px; }
   .calendar { border-top: 1px solid #222; }
   .week { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); }
   .weekdays { border-bottom: 1px solid #ddd; }
-  .dow { text-align: center; color: #555; font-size: clamp(8px, 1.7vw, 12px); padding: 7px 0; overflow: hidden; }
-  .days { grid-template-rows: 26px repeat(3, 19px) minmax(86px, auto); row-gap: 2px; padding-bottom: 6px; border-bottom: 1px solid #e8e8e8; }
+  .dow { text-align: center; color: #555; font-size: clamp(8px, 1.7vw, 12px); padding: 4px 0; overflow: hidden; }
+  .days { grid-template-rows: 20px repeat(var(--lanes), 15px) minmax(44px, auto); row-gap: 1px; padding-bottom: 3px; border-bottom: 1px solid #e8e8e8; }
   .days:last-child { border-bottom: 0; }
-  .num { grid-row: 1; justify-self: start; margin: 5px 0 0 5px; width: 19px; height: 19px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #444; }
+  .num { grid-row: 1; justify-self: start; margin: 2px 0 0 4px; width: 17px; height: 17px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; color: #444; }
   .num.today { background: #222; color: #fff; }
-  .bar { border: 0; border-radius: 0; height: 17px; align-self: center; min-width: 0; padding: 0 6px; text-align: left; font-size: 10px; line-height: 17px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #222; }
+  .bar { border: 0; border-radius: 0; height: 14px; align-self: center; min-width: 0; padding: 0 6px; text-align: left; font-size: 10px; line-height: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #222; }
   .bar.start { border-top-left-radius: 9px; border-bottom-left-radius: 9px; margin-left: 4px; }
   .bar.end { border-top-right-radius: 9px; border-bottom-right-radius: 9px; margin-right: 4px; }
-  .covers { grid-row: 5; display: flex; justify-content: center; align-items: flex-end; gap: 3px; padding: 5px 3px 0; min-width: 0; }
-  .cover { flex: 0 1 52px; min-width: 0; aspect-ratio: 2 / 3; padding: 0; border: 0; border-radius: 2px; overflow: hidden; box-shadow: 0 2px 7px rgba(0,0,0,.2); transition: transform .15s; }
+  .covers { grid-row: -2; display: flex; justify-content: center; align-items: flex-end; gap: 3px; padding: 2px 2px 0; min-width: 0; }
+  .cover { flex: 0 1 28px; min-width: 0; aspect-ratio: 2 / 3; padding: 0; border: 0; border-radius: 2px; overflow: hidden; box-shadow: 0 2px 7px rgba(0,0,0,.2); transition: transform .15s; }
   .cover:hover { transform: translateY(-3px); }
   .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .cover span { display: block; padding: 3px; color: #fff; font-size: 9px; line-height: 1.2; word-break: break-all; }
   .more { align-self: center; justify-self: end; border: 0; padding: 0 3px; font-size: 10px; color: #555; z-index: 1; }
+  /* 미니멀 먼슬리 */
+  .cal-box { border: 0; padding: 8px 0 0; }
+  .calendar { border-top: 0; }
+  .weekdays { border-bottom: 1px solid #ddd; }
+  .dow { font-size: 8px; color: #888; padding: 3px 0; }
+  .num { font-size: 8px; color: #666; width: 14px; height: 14px; }
+  .num.today { color: #fff; }
+  .days, .days:last-child { border-bottom: 1px solid #eee; }
+  .bar { font-size: 9px; color: #444; }
+  .cover { box-shadow: 0 1px 3px rgba(0,0,0,.14); }
+  /* 형광펜: 일자 끝 + 은은한 잉크 겹침 */
+  .bar.start, .bar.end, .days .bar { border-radius: 0; }
+  .days .bar { height: 12px; line-height: 12px; background-image: linear-gradient(to bottom, transparent 62%, rgba(255,255,255,.18) 62%, transparent 82%); }
+  .days .bar.start { box-shadow: inset 3px 0 0 rgba(0,0,0,.035); }
+  .days .bar.end { box-shadow: inset -3px 0 0 rgba(0,0,0,.035); }
+  .days .bar.start.end { box-shadow: inset 3px 0 0 rgba(0,0,0,.035), inset -3px 0 0 rgba(0,0,0,.035); }
 </style>
 </head>
 <body>
@@ -339,7 +357,7 @@
     }
   }
 
-  const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+  const DAYS = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
   const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
 
   function place(node, row, from, to = from) {
@@ -400,6 +418,7 @@
 
     for (let w = 0; w < Math.ceil((offset + lastDay) / 7); w++) {
       const week = el("div", "week days");
+      week.style.setProperty("--lanes", Math.min(3, Math.max(1, laneEnds.length)));
       const dates = [];
       for (let col = 0; col < 7; col++) {
         const day = w * 7 + col - offset + 1;
@@ -419,8 +438,8 @@
         bar.type = "button";
         bar.title = s.book.title;
         bar.onclick = () => showDetail(s.book);
-        bar.style.background = rgba(baseColor(s.book), .3);
-        coverColor(s.book).then(c => bar.style.background = rgba(c, .3));
+        bar.style.backgroundColor = rgba(baseColor(s.book), .19);
+        coverColor(s.book).then(c => bar.style.backgroundColor = rgba(c, .19));
         week.append(place(bar, s.lane + 2, inside[0].col, inside[inside.length - 1].col));
       });
 
@@ -434,7 +453,7 @@
             return card;
           });
           box.append(...cards);
-          week.append(place(box, 5, col));
+          week.append(place(box, "-2", col));
         }
         const active = visible.filter(s => s.start <= date && date <= s.end);
         const hidden = active.filter(s => s.lane >= 3).length + Math.max(0, finished.length - 2);
