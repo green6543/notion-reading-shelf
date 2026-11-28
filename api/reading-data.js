@@ -1,164 +1,133 @@
+// 위치: api/reading-data.js
 const NOTION_VERSION = "2026-03-11";
+const API = "https://api.notion.com/v1";
 
 function normalizeNotionId(rawId = "") {
-  const cleaned = String(rawId).trim().split("?")[0].split("/").pop() || "";
-  const hexOnly = cleaned.replace(/-/g, "");
-  const match = hexOnly.match(/[0-9a-fA-F]{32}/);
+  const cleaned = String(rawId).trim().split(/[?#]/)[0].replace(/\/+$/, "").split("/").pop() || "";
+  const match = cleaned.replace(/-/g, "").match(/[0-9a-f]{32}(?![0-9a-f])/i);
   return match ? match[0].toLowerCase() : "";
 }
 
-async function queryAllNotionRows(databaseId, notionToken) {
-  const results = [];
-  let hasMore = true;
-  let startCursor = undefined;
+async function notion(path, token, body) {
+  const response = await fetch(`${API}${path}`, {
+    method: body ? "POST" : "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Notion-Version": NOTION_VERSION,
+      "Content-Type": "application/json"
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
 
-  while (hasMore) {
-    const response = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${notionToken}`,
-        "Notion-Version": NOTION_VERSION,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        page_size: 100,
-        start_cursor: startCursor
-      })
-    });
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Notion query failed (${response.status}): ${errText}`);
-    }
-
-    const data = await response.json();
-    results.push(...(data.results || []));
-    hasMore = Boolean(data.has_more);
-    startCursor = data.next_cursor || undefined;
+  if (!response.ok) {
+    const text = await response.text();
+    const error = new Error(`Notion API ${response.status}: ${text}`);
+    error.status = response.status;
+    throw error;
   }
+  return response.json();
+}
 
+// 데이터베이스 ID → 데이터 소스 ID (2025-09-03 이후 방식)
+async function resolveDataSourceId(databaseId, token) {
+  const database = await notion(`/databases/${databaseId}`, token);
+  const sources = database.data_sources || [];
+  const source = sources.find(s => s.name === "Reading Library") || sources[0];
+  if (!source) throw new Error("데이터베이스에서 데이터 소스를 찾지 못했습니다.");
+  return source.id;
+}
+
+async function queryAllRows(dataSourceId, token) {
+  const results = [];
+  let cursor;
+  do {
+    const data = await notion(`/data_sources/${dataSourceId}/query`, token, {
+      page_size: 100,
+      ...(cursor ? { start_cursor: cursor } : {})
+    });
+    results.push(...(data.results || []));
+    cursor = data.has_more ? data.next_cursor : undefined;
+  } while (cursor);
   return results;
 }
 
-function getTextValue(prop) {
-  if (!prop) return "";
-  if (prop.type === "title") return (prop.title || []).map(t => t.plain_text).join("");
-  if (prop.type === "rich_text") return (prop.rich_text || []).map(t => t.plain_text).join("");
-  if (prop.type === "formula") {
-    if (prop.formula?.type === "string") return prop.formula.string || "";
-    if (prop.formula?.type === "number") return String(prop.formula.number ?? "");
-  }
-  if (prop.type === "rollup") {
-    const arr = prop.rollup?.array || [];
-    return arr.map(item => getTextValue(item)).filter(Boolean).join(", ");
+const plain = list => (list || []).map(t => t.plain_text).join("");
+
+function getText(prop) {
+  if (prop?.type === "title") return plain(prop.title);
+  if (prop?.type === "rich_text") return plain(prop.rich_text);
+  return "";
+}
+
+function getOption(prop) {
+  if (prop?.type === "select") return prop.select?.name || "";
+  if (prop?.type === "status") return prop.status?.name || "";
+  return "";
+}
+
+function getCover(prop) {
+  for (const f of prop?.files || []) {
+    const url = f.file?.url || f.external?.url;
+    if (url) return url;
   }
   return "";
 }
 
-function getNumberValue(prop) {
-  if (!prop) return 0;
-  if (prop.type === "number") return Number(prop.number ?? 0);
-  if (prop.type === "formula" && prop.formula?.type === "number") return Number(prop.formula.number ?? 0);
-  return 0;
-}
-
-function getSelectOrStatusName(prop, fallback = "") {
-  if (!prop) return fallback;
-  if (prop.type === "select") return prop.select?.name || fallback;
-  if (prop.type === "status") return prop.status?.name || fallback;
-  return fallback;
-}
-
-function getFilesArray(prop) {
-  if (!prop || prop.type !== "files" || !Array.isArray(prop.files)) return [];
-  return prop.files
-    .map(f => {
-      if (f.type === "file" && f.file?.url) {
-        return { type: "file", url: f.file.url, name: f.name || "" };
-      }
-      if (f.type === "external" && f.external?.url) {
-        return { type: "external", url: f.external.url, name: f.name || "" };
-      }
-      return null;
-    })
-    .filter(Boolean);
-}
-
-function getSingleDateRange(prop) {
-  if (!prop || prop.type !== "date" || !prop.date) {
-    return { start: "", end: "" };
-  }
-  const start = (prop.date.start || "").slice(0, 10);
-  const end = (prop.date.end || prop.date.start || "").slice(0, 10);
-  return { start, end };
-}
-
-function mapBookPage(page) {
+function mapBook(page) {
   const p = page.properties || {};
-  const titleProp = Object.values(p).find(item => item && item.type === "title");
-  const dateProp =
-    p["Date"] ||
-    p["date"] ||
-    p["날짜"] ||
-    Object.values(p).find(item => item && item.type === "date");
-  const filesProp =
-    p["파일 및 미디어"] ||
-    p["Files"] ||
-    p["files"] ||
-    p["SpineImage"] ||
-    p["Cover"] ||
-    Object.values(p).find(item => item && item.type === "files");
-
-  const dateRange = getSingleDateRange(dateProp);
-  const files = getFilesArray(filesProp);
-
+  const titleProp = Object.values(p).find(v => v?.type === "title");
+  const date = p.Date?.date;
   return {
     id: page.id,
-    Title: getTextValue(p["Title"] || p["도서명"] || p["이름"] || titleProp),
-    Author: getTextValue(p["Author"] || p["저자"]),
-    TotalPages: getNumberValue(p["TotalPages"] || p["총 페이지"]),
-    Status: getSelectOrStatusName(p["Status"] || p["독서 상태"], "완독"),
-    Genre: getSelectOrStatusName(p["Genre"] || p["장르"], "기타"),
-    Date: dateRange,
-    StartDate: dateRange.start,
-    FinishedDate: dateRange.end,
-    Files: files,
-    SpineImage: files[0]?.url || "",
-    SpineColor: getSelectOrStatusName(p["SpineColor"] || p["책등 색상"], "#5c6f82")
+    title: getText(titleProp).trim(),
+    author: getText(p.Author),
+    pages: p.TotalPages?.number || 0,
+    status: getOption(p.Status), // 비어 있으면 완독으로 세지 않음
+    genre: getOption(p.Genre),
+    rating: getOption(p.Rating),
+    memo: getText(p["독서 메모"]),
+    quoteCount: p.Quotes?.relation?.length || 0,
+    quoteHasMore: Boolean(p.Quotes?.has_more),
+    dateStart: (date?.start || "").slice(0, 10),
+    dateEnd: (date?.end || "").slice(0, 10),
+    cover: getCover(p.Files)
   };
 }
 
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
+function explain(error) {
+  if (error.status === 401) return "노션 토큰이 올바르지 않습니다. NOTION_TOKEN을 확인하세요.";
+  if (error.status === 403) return "노션 통합에 '콘텐츠 읽기' 권한이 있는지 확인하세요.";
+  if (error.status === 404) return "DB를 찾지 못했습니다. NOTION_BOOKS_DB_ID와 DB의 통합 연결을 확인하세요.";
+  if (error.status === 429) return "노션 요청이 많습니다. 잠시 후 다시 시도하세요.";
+  return "노션 데이터를 불러오지 못했습니다. Vercel의 Logs를 확인하세요.";
+}
 
-  if (req.method === "OPTIONS") {
-    return res.status(200).end();
-  }
+export default async function handler(req, res) {
+  // 새로고침할 때마다 최신 데이터를 받도록 캐시를 끔
+  res.setHeader("Cache-Control", "no-store, max-age=0");
 
   if (req.method !== "GET") {
     return res.status(405).json({ error: "Method Not Allowed" });
   }
 
-  const { NOTION_TOKEN, NOTION_BOOKS_DB_ID } = process.env;
-  const booksDbId = normalizeNotionId(NOTION_BOOKS_DB_ID);
+  const token = (process.env.NOTION_TOKEN || "").trim();
+  const databaseId = normalizeNotionId(process.env.NOTION_BOOKS_DB_ID);
 
-  if (!NOTION_TOKEN || !booksDbId) {
+  if (!token || !databaseId) {
     return res.status(500).json({
-      error: "NOTION_TOKEN 또는 NOTION_BOOKS_DB_ID 환경 변수가 없거나 형식이 올바르지 않습니다."
+      error: "환경 변수 NOTION_TOKEN 또는 NOTION_BOOKS_DB_ID가 없거나 형식이 잘못되었습니다."
     });
   }
 
   try {
-    const bookRows = await queryAllNotionRows(booksDbId, NOTION_TOKEN);
-    const books = bookRows.map(mapBookPage).filter(b => b.Title);
-
+    const dataSourceId = await resolveDataSourceId(databaseId, token);
+    const rows = await queryAllRows(dataSourceId, token);
     return res.status(200).json({
-      books,
+      books: rows.map(mapBook).filter(b => b.title),
       updatedAt: new Date().toISOString()
     });
   } catch (error) {
-    return res.status(500).json({ error: error.message || "Failed to load reading data" });
+    console.error(error);
+    return res.status(500).json({ error: explain(error), code: error.status || null });
   }
 }
