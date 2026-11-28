@@ -76,6 +76,9 @@
   .cal-nav .cal-title { margin: 0; min-width: 112px; text-align: center; }
   .cal-nav button { width: 28px; height: 28px; font-size: 15px; line-height: 1; color: var(--sub); }
   .cal-nav button:hover { background: var(--soft); color: var(--ink); }
+  .rating-pop { position: absolute; z-index: 10; min-width: 96px; max-width: 180px; padding: 9px 12px; background: var(--ink); color: #fff; border-radius: 8px; text-align: center; box-shadow: 0 6px 18px rgba(0,0,0,.18); overflow-wrap: anywhere; }
+  .rating-pop small { display: block; font-size: 9px; color: #bbb; }
+  .rating-pop b { display: block; margin-top: 2px; font-size: 13px; font-weight: 500; letter-spacing: .04em; }
   /* 형광펜: 일자 끝 */
   .bar { align-self: center; min-width: 0; height: 12px; line-height: 12px; padding: 0 5px; border-radius: 0; text-align: left; font-size: 9px; color: #444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background-image: linear-gradient(to bottom, transparent 62%, rgba(255,255,255,.18) 62%, transparent 82%); }
   .bar.start { margin-left: 4px; box-shadow: inset 3px 0 0 rgba(0,0,0,.035); }
@@ -393,12 +396,49 @@
     return node;
   }
 
+  let ratingAnchor = null;
+
+  function closeRating() {
+    document.querySelector(".rating-pop")?.remove();
+    ratingAnchor = null;
+  }
+
+  // 5점 만점: 노션의 ★ ~ ★★★★★ 선택지를 빈 별까지 채워 표시
+  function ratingText(rating) {
+    if (!rating) return "평점 미입력";
+    const value = rating.replace(/[\s\uFE0F]/g, "");
+    if (/^★{1,5}$/.test(value)) return value + "☆".repeat(5 - value.length);
+    return rating;
+  }
+
+  function toggleRating(book, anchor) {
+    const same = ratingAnchor === anchor;
+    closeRating();
+    if (same) return;
+    const pop = el("div", "rating-pop");
+    pop.setAttribute("role", "status");
+    pop.append(el("small", "", book.title), el("b", "", ratingText(book.rating)));
+    document.body.append(pop);
+    const box = anchor.getBoundingClientRect();
+    const width = document.documentElement.clientWidth;
+    const left = Math.max(8, Math.min(box.left + box.width / 2 - pop.offsetWidth / 2, width - pop.offsetWidth - 8));
+    const above = box.top - pop.offsetHeight - 6;
+    pop.style.left = `${left + scrollX}px`;
+    pop.style.top = `${(above >= 0 ? above : box.bottom + 6) + scrollY}px`;
+    ratingAnchor = anchor;
+  }
+
+  // 바깥을 누르거나 Esc를 누르면 닫기
+  document.addEventListener("click", e => { if (!e.target.closest(".cover, .rating-pop")) closeRating(); });
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeRating(); });
+  addEventListener("resize", closeRating);
+
   function coverCard(book) {
     const card = el("button", "cover");
     card.type = "button";
     card.title = book.title;
     card.setAttribute("aria-label", `${book.title} 완독`);
-    card.onclick = () => showDetail(book);
+    card.onclick = () => { showDetail(book); toggleRating(book, card); };
     card.style.background = baseColor(book);
     const title = () => card.replaceChildren(el("span", "", book.title));
     if (book.cover) {
@@ -412,6 +452,7 @@
   }
 
   function renderCalendar() {
+    closeRating();
     const year = Number(goalYear());
     const month = Number($("month").value);
     const lastDay = new Date(year, month + 1, 0).getDate();
